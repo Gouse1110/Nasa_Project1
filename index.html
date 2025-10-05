@@ -1,0 +1,2119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Earth Risk Monitor - Flood & Landslide Detection System</title>
+  <meta name="description" content="Advanced Flood & Landslide Detection using NASA InSAR Technology and AI-Powered Alerts. Real-time monitoring and multi-language notifications.">
+  <link rel="canonical" href="./earth-risk-monitor.html">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Design System - All colors in HSL */
+    :root {
+      --background: 220 25% 8%;
+      --foreground: 210 40% 98%;
+      --card: 220 20% 12%;
+      --card-foreground: 210 40% 98%;
+      --primary: 217 91% 60%;
+      --primary-foreground: 220 25% 8%;
+      --secondary: 195 100% 45%;
+      --secondary-foreground: 220 25% 8%;
+      --muted: 220 15% 20%;
+      --muted-foreground: 215 20% 65%;
+      --destructive: 0 84% 60%;
+      --destructive-foreground: 210 40% 98%;
+      --success: 142 76% 36%;
+      --success-foreground: 210 40% 98%;
+      --warning: 45 93% 47%;
+      --warning-foreground: 220 25% 8%;
+      --border: 220 15% 25%;
+      --radius: 12px;
+      
+      --gradient-space: linear-gradient(135deg, hsl(220 25% 8%) 0%, hsl(235 30% 15%) 50%, hsl(220 25% 8%) 100%);
+      --gradient-earth: linear-gradient(135deg, hsl(195 100% 45%) 0%, hsl(217 91% 60%) 50%, hsl(142 76% 36%) 100%);
+      --gradient-alert: linear-gradient(135deg, hsl(0 84% 60%) 0%, hsl(32 95% 55%) 100%);
+      --glow-primary: 0 0 24px hsl(217 91% 60% / 0.4);
+    }
+    
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0;
+    }
+    
+    body { 
+      background: hsl(var(--background)); 
+      color: hsl(var(--foreground)); 
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+    }
+    
+    /* Navigation */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      -webkit-backdrop-filter: saturate(120%) blur(12px);
+              backdrop-filter: saturate(120%) blur(12px);
+      background: color-mix(in oklab, hsl(var(--card)), transparent 20%);
+      border-bottom: 1px solid hsl(var(--border));
+    }
+    
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 16px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+    
+ 
+    
+    .brand-text {
+      font-size: 20px;
+      font-weight: 700;
+      background: var(--gradient-earth);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .nav-menu {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 36px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: hsl(var(--foreground));
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    
+    .nav-btn.active {
+      background: hsl(var(--primary));
+      color: hsl(var(--primary-foreground));
+    }
+    
+    /* Layout */
+    .section {
+      display: none;
+      min-height: 100vh;
+      padding-top: 64px;
+    }
+    
+    .section.active {
+      display: block;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 16px;
+    }
+    
+    /* Hero Section - CHANGE BACKGROUND IMAGE HERE */
+  /* Fullscreen Video */
+.hero-video {
+  position: fixed;   /* stays fixed in background */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  -o-object-fit: cover;
+     object-fit: cover; /* keeps aspect ratio, covers screen */
+  z-index: -1;       /* behind everything */
+}
+
+/* Dark overlay content */
+.hero-overlay {
+  position: relative;
+  height: 100vh; /* full screen height */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: white;
+  padding: 0 20px;
+}
+
+/* Title */
+.hero-title {
+  font-size: 3.5rem;
+  font-weight: bold;
+  color: #00e5ff; /* cyan glow */
+  margin-bottom: 0.5rem;
+  text-align: center;
+  text-shadow: 0 0 50px #11c1d4, 
+             0 0 20px #00e5ff, 
+             0 0 0px #12dff6;
+  animation: pulse-slow 3s infinite;
+}
+
+/* Subtitle */
+.hero-subtitle {
+  font-size: 3.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  text-align: center;
+  color: #ffffff; /* Pure white */
+  text-shadow: 0 0 0pcx #000, 
+             0 0 0px #000, 
+             0 0 0px #000;
+}
+
+    
+    .orb {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 24px;
+      border-radius: 50%;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .orb-inner {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+    }
+    
+    .hero-title {
+      font-size: clamp(36px, 6vw, 72px);
+      font-weight: 800;
+      margin-bottom: 16px;
+      background: var(--gradient-earth);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.2;
+    }
+    
+    .hero-subtitle {
+      font-size: clamp(18px, 2.5vw, 24px);
+      color: hsl(var(--muted-foreground));
+      margin-bottom: 48px;
+    }
+    
+    /* Cards */
+    .card {
+      background: color-mix(in oklab, hsl(var(--card)), transparent 10%);
+      border: 1px solid hsl(var(--border));
+      border-radius: var(--radius);
+      padding: 24px;
+      transition: all 0.3s;
+    }
+    
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px hsl(var(--primary) / 0.15);
+    }
+    
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-top: 48px;
+      max-width: 1000px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    @media (max-width: 1024px) {
+      .feature-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    .feature-card {
+      text-align: center;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+    }
+    
+    .feature-card h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .feature-card p {
+      font-size: 14px;
+      color: hsl(var(--muted-foreground));
+    }
+    
+    /* Grid Layout */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    
+    @media (max-width: 900px) {
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* Map */
+    .map-container {
+      height: 600px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid hsl(var(--border));
+    }
+    
+    .map {
+      width: 100%;
+      height: 100%;
+    }
+    
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid;
+    }
+    
+    .badge-high {
+      background: hsl(var(--destructive) / 0.1);
+      border-color: hsl(var(--destructive) / 0.3);
+      color: hsl(var(--destructive));
+    }
+    
+    .badge-moderate {
+      background: hsl(var(--warning) / 0.1);
+      border-color: hsl(var(--warning) / 0.3);
+      color: hsl(var(--warning));
+    }
+    
+    .badge-low {
+      background: hsl(var(--success) / 0.1);
+      border-color: hsl(var(--success) / 0.3);
+      color: hsl(var(--success));
+    }
+    
+    /* Form Elements */
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    input, select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid hsl(var(--border));
+      border-radius: 8px;
+      background: transparent;
+      color: hsl(var(--foreground));
+      font-family: inherit;
+      font-size: 14px;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: hsl(var(--primary));
+      box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 8px;
+      border: none;
+      background: hsl(var(--primary));
+      color: hsl(var(--primary-foreground));
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px hsl(var(--primary) / 0.3);
+    }
+    
+    .btn-full {
+      width: 100%;
+    }
+    
+    /* Alert List */
+    .alert-item {
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .alert-high {
+      background: hsl(var(--destructive) / 0.1);
+      border: 1px solid hsl(var(--destructive) / 0.3);
+    }
+    
+    .alert-moderate {
+      background: hsl(var(--warning) / 0.1);
+      border: 1px solid hsl(var(--warning) / 0.3);
+    }
+    
+    .alert-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .alert-location {
+      font-weight: 600;
+      font-size: 16px;
+    }
+    
+    .alert-time {
+      font-size: 12px;
+      color: hsl(var(--muted-foreground));
+    }
+    
+    .alert-meta {
+      font-size: 14px;
+      color: hsl(var(--muted-foreground));
+      margin-bottom: 4px;
+    }
+    
+    .alert-message {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    
+    /* Page Header */
+    .page-header {
+      margin-bottom: 32px;
+    }
+    
+    .page-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    
+    .page-icon {
+      font-size: 40px;
+    }
+    
+    .page-description {
+      font-size: 18px;
+      color: hsl(var(--muted-foreground));
+    }
+    
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+    
+    .stat-card {
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid;
+    }
+    
+    .stat-high {
+      background: hsl(var(--destructive) / 0.1);
+      border-color: hsl(var(--destructive) / 0.3);
+    }
+    
+    .stat-moderate {
+      background: hsl(var(--warning) / 0.1);
+      border-color: hsl(var(--warning) / 0.3);
+    }
+    
+    .stat-low {
+      background: hsl(var(--success) / 0.1);
+      border-color: hsl(var(--success) / 0.3);
+    }
+    
+    .stat-value {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    
+    .stat-label {
+      font-size: 14px;
+      color: hsl(var(--muted-foreground));
+    }
+    
+    /* Tabs */
+    .tabs-list {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      background: hsl(var(--muted));
+      padding: 4px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+    
+    .tab-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border: none;
+      background: transparent;
+      color: hsl(var(--muted-foreground));
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    
+    .tab-trigger:hover {
+      background: hsl(var(--background) / 0.5);
+    }
+    
+    .tab-trigger.active {
+      background: hsl(var(--background));
+      color: hsl(var(--foreground));
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+      .tab-content.active {
+        display: block;
+      }
+
+      .map-view-toggle {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 1000;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        overflow: hidden;
+      }
+
+      .map-view-toggle button {
+        display: block;
+        width: 40px;
+        height: 40px;
+        border: none;
+        background: white;
+        cursor: pointer;
+        transition: background 0.2s;
+        font-size: 14px;
+      }
+
+      .map-view-toggle button:hover {
+        background: #f0f0f0;
+      }
+
+      .map-view-toggle button.active {
+        background: #0066cc;
+        color: white;
+      }
+
+      .map-view-toggle button:not(:last-child) {
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      /* Chatbot Styles */
+      .chatbot-toggle {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 12px hsl(var(--primary) / 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        z-index: 1001;
+        transition: all 0.3s;
+      }
+
+      .chatbot-toggle:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 16px hsl(var(--primary) / 0.6);
+      }
+
+      .chatbot-container {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        width: 380px;
+        height: 600px;
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        display: none;
+        flex-direction: column;
+        z-index: 1002;
+        overflow: hidden;
+      }
+
+      .chatbot-container.open {
+        display: flex;
+      }
+
+      .chatbot-header {
+        padding: 16px;
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .chatbot-header h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .chatbot-close {
+        background: none;
+        border: none;
+        color: inherit;
+        cursor: pointer;
+        font-size: 20px;
+        padding: 4px;
+        line-height: 1;
+      }
+
+      .chatbot-mode {
+        padding: 8px 16px;
+        background: hsl(var(--muted));
+        border-bottom: 1px solid hsl(var(--border));
+        display: flex;
+        gap: 8px;
+      }
+
+      .mode-btn {
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        color: hsl(var(--muted-foreground));
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 500;
+        transition: all 0.2s;
+        font-family: inherit;
+      }
+
+      .mode-btn.active {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+      }
+
+      .chatbot-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .message {
+        padding: 10px 14px;
+        border-radius: 12px;
+        max-width: 85%;
+        word-wrap: break-word;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .message-user {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
+      }
+
+      .message-bot {
+        background: hsl(var(--muted));
+        color: hsl(var(--foreground));
+        align-self: flex-start;
+        border-bottom-left-radius: 4px;
+      }
+
+      .message-bot strong {
+        color: hsl(var(--primary));
+      }
+
+      .message-bot .action {
+        color: hsl(var(--success));
+        font-weight: 600;
+      }
+
+      .chatbot-input {
+        padding: 16px;
+        border-top: 1px solid hsl(var(--border));
+        display: flex;
+        gap: 8px;
+      }
+
+      .chatbot-input input {
+        flex: 1;
+        padding: 10px 14px;
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        background: transparent;
+        color: hsl(var(--foreground));
+        font-family: inherit;
+        font-size: 14px;
+      }
+
+      .chatbot-input button {
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: none;
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+      }
+
+      .chatbot-input button:hover {
+        transform: translateY(-2px);
+      }
+
+      @media (max-width: 480px) {
+        .chatbot-container {
+          width: calc(100vw - 32px);
+          height: calc(100vh - 100px);
+          bottom: 16px;
+          right: 16px;
+        }
+      }
+    
+    /* Zone List */
+    .zone-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .zone-item {
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .zone-item:hover {
+      transform: scale(1.02);
+    }
+    
+    .zone-item.selected {
+      border: 2px solid hsl(var(--primary));
+    }
+    
+    .zone-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .zone-name {
+      font-weight: 600;
+      font-size: 16px;
+    }
+    
+    .zone-details {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 14px;
+    }
+    
+    .zone-detail {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .zone-label {
+      color: hsl(var(--muted-foreground));
+    }
+    
+    .zone-value {
+      font-weight: 600;
+    }
+    
+    /* Sidebar Layout */
+    .layout-sidebar {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    
+    @media (min-width: 1024px) {
+      .layout-sidebar {
+        grid-template-columns: 2fr 1fr;
+      }
+    }
+    
+    /* Info Box */
+    .info-box {
+      padding: 16px;
+      border-radius: 8px;
+      margin-top: 16px;
+    }
+    
+    .info-box h4 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .info-box ul {
+      list-style: none;
+      padding: 0;
+    }
+    
+    .info-box li {
+      font-size: 14px;
+      color: hsl(var(--muted-foreground));
+      padding: 4px 0;
+    }
+    
+    /* Animations */
+    @keyframes pulse-slow {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.9; }
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+    
+    /* Hide scrollbar but keep functionality */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: hsl(var(--background));
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: hsl(var(--border));
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: hsl(var(--primary));
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-menu {
+        display: none;
+      }
+      
+      .hero-title {
+        font-size: 32px;
+      }
+      
+      .hero-subtitle {
+        font-size: 16px;
+      }
+      
+      .feature-grid {
+        grid-template-columns: 1fr;
+        max-width: 400px;
+      }
+      
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+
+         /* Custom Card Styles */
+  .sar-card {
+  background: #1e1e1e;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s ease;
+}
+.sar-card:hover {
+  transform: translateY(-4px);
+}
+.sar-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #00e0ff;
+  margin-bottom: 0.5rem;
+}
+.sar-text {
+  color: #d1d5db;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+      
+    }
+  </style>
+</head>
+<body>
+
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="#home" class="brand" onclick="showSection('home'); return false;">
+        <div class="brand-badge"></div>
+        <span class="brand-text">Earth Risk Monitor</span>
+      </a>
+      <div class="nav-menu">
+        <button class="nav-btn active" data-section="home" onclick="showSection('home')">🏠 Home</button>
+        <button class="nav-btn" data-section="flood" onclick="showSection('flood')">🌊 Flood Monitoring</button>
+        <button class="nav-btn" data-section="landslide" onclick="showSection('landslide')">🏔️ Landslide Monitoring</button>
+        <button class="nav-btn" data-section="live" onclick="showSection('live')">🗺️ Live Maps</button>
+        <button class="nav-btn" data-section="alerts" onclick="showSection('alerts')">🔔 Alerts</button>
+      </div>
+    </div>
+  </nav>
+
+<br><br><br>
+  <!-- Home Section -->
+  <section id="home" class="section active">
+    <div class="hero">
+      <div class="hero-content">
+        <div class="orb"></div>
+
+          <video autoplay muted loop playsinline class="hero-video">
+            <source src="/NASA_Project/assets/218740-H2yUQ93_.mp4" type="video/mp4">
+          </video>
+        <h1 class="hero-title">Earth Risk Monitor</h1>
+        <p class="hero-subtitle">Advanced Flood & Landslide Detection using NASA InSAR Technology and AI-Powered Alerts</p>
+        <br>
+        <br>
+        <div class="feature-grid">
+          <a href="#flood" class="feature-card card" onclick="showSection('flood'); return false;">
+            <div class="feature-icon">🌊</div>
+            <h3>Flood Monitoring</h3>
+            <p>Real-time satellite tracking</p>
+          </a>
+          
+          <a href="#landslide" class="feature-card card" onclick="showSection('landslide'); return false;">
+            <div class="feature-icon">🏔️</div>
+            <h3>Landslide Detection</h3>
+            <p>InSAR ground analysis</p>
+          </a>
+          
+          <a href="#live" class="feature-card card" onclick="showSection('live'); return false;">
+            <div class="feature-icon">🗺️</div>
+            <h3>Live Maps</h3>
+            <p>Integrated dashboard</p>
+          </a>
+          
+          <a href="#alerts" class="feature-card card" onclick="showSection('alerts'); return false;">
+            <div class="feature-icon">🔔</div>
+            <h3>Alert System</h3>
+            <p>SMS & voice notifications</p>
+          </a>
+        </div>
+      </div>
+    </div>
+
+  <br><br>
+  <!-- What is SAR -->
+<section class="p-8 bg-black grid md:grid-cols-2 gap-10 items-center">
+ 
+  <!-- Left: Text -->
+  <div>
+    <h2 class="text-2xl font-bold text-cyan-400 flex items-center mb-4">
+      💡 What is SAR?
+    </h2>
+    <p class="text-gray-300 mb-4">
+      Synthetic Aperture Radar (SAR) is an advanced remote sensing technology that
+      uses radar signals to create high-resolution images of the Earth's surface.
+    </p>
+    <p class="text-gray-300">
+      SAR can "see" through clouds, fog, and darkness, providing continuous monitoring
+      capabilities day and night.
+    </p>
+  </div>
+
+  <!-- Right: Image with glow border -->
+  <div class="flex flex-col items-center">
+    <div class="p-[2px] rounded-lg bg-gradient-to-r from-cyan-400 to-blue-500">
+      <img src="/NASA_Project/assets/sar-satellite-BrAnmp82.jpg" alt="SAR Satellite in orbit"
+           class="rounded-lg shadow-lg">
+    </div>
+    <p class="text-gray-400 text-sm mt-2">
+      SAR Satellite in orbit
+    </p>
+  </div>
+</section>
+
+
+
+  <!-- How does SAR Work -->
+<section class="p-b bg-black">
+  <h2 class="text-2xl font-bold text-cyan-400 flex items-center mb-8">
+    🛰 How Does SAR Work?
+  </h2>
+
+  <div class="grid md:grid-cols-2 gap-10 items-center">
+    <!-- Left: Image -->
+ <div class="flex flex-col items-center">
+  <!-- Gradient border wrapper -->
+  <div class="p-[3px] rounded-2xl bg-gradient-to-r from-cyan-400 to-green-500">
+    <img src="/NASA_Project/assets/radar-waves-Bo8ujI_l.jpg" alt="SAR waves interacting with Earth"
+         class="rounded-2xl shadow-lg max-w-full">
+  </div>
+
+  <!-- Caption -->
+  <p class="text-gray-400 text-sm mt-2 text-center">
+    Synthetic Aperture Radar waves interacting with Earth
+  </p>
+</div>
+
+
+    <!-- Right: Cards -->
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Card 1 -->
+      <div class="sar-card">
+        <h3 class="sar-title">1. Signal Transmission</h3>
+        <p class="sar-text">
+          The satellite transmits pulses of microwave energy toward the Earth's surface.
+        </p>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="sar-card">
+        <h3 class="sar-title">2. Echo Reception</h3>
+        <p class="sar-text">
+          Different surfaces reflect signals differently – water, vegetation, and soil all have unique radar signatures.
+        </p>
+      </div>
+
+      <!-- Card 3 (spans 2 columns) -->
+      <div class="sar-card md:col-span-2">
+        <h3 class="sar-title">3. Image Processing</h3>
+        <p class="sar-text">
+          Advanced algorithms process the returned signals to create detailed images.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- What Can SAR Detect -->
+<section class="p-8 bg-black">
+  <h2 class="text-2xl font-bold text-cyan-400 flex items-center mb-4">
+    ⚠ What Can SAR Detect?
+  </h2>
+  <p class="text-gray-300 mb-6">
+    SAR technology has become invaluable for monitoring our planet and detecting critical changes
+  </p>
+
+  <!-- Cards -->
+  <div class="grid md:grid-cols-4 gap-6 mb-8">
+    <!-- Card 1 -->
+    <div class="p-4 rounded-xl bg-gray-900 shadow-lg hover:shadow-cyan-400/50 transition">
+      <h3 class="font-bold text-blue-400 mb-2">🌊 Flood Monitoring</h3>
+      <p class="text-gray-300 text-sm">
+        Water appears very dark in SAR images, making it easy to map flooded areas.
+      </p>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="p-4 rounded-xl bg-gray-900 shadow-lg hover:shadow-green-400/50 transition">
+      <h3 class="font-bold text-green-400 mb-2">⛰️ Landslide Detection</h3>
+      <p class="text-gray-300 text-sm">
+        SAR can detect ground deformation as small as a few millimeters.
+      </p>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="p-4 rounded-xl bg-gray-900 shadow-lg hover:shadow-yellow-400/50 transition">
+      <h3 class="font-bold text-lime-400 mb-2">🌳 Deforestation Tracking</h3>
+      <p class="text-gray-300 text-sm">
+        Changes in forest cover are easily visible, helping track environmental changes.
+      </p>
+    </div>
+
+    <!-- Card 4 -->
+    <div class="p-4 rounded-xl bg-gray-900 shadow-lg hover:shadow-pink-400/50 transition">
+      <h3 class="font-bold text-cyan-400 mb-2">🏙️ Infrastructure Changes</h3>
+      <p class="text-gray-300 text-sm">
+        Urban development is clearly visible for planning and monitoring.
+      </p>
+    </div>
+  </div>
+
+  <!-- Image with gradient border -->
+  <div class="flex flex-col items-center">
+    <div class="p-[3px] rounded-lg bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600">
+      <img src="/NASA_Project/assets/flood-detection-DQuiZ0_Z.jpg" 
+           alt="Before and after flood event as detected by SAR"
+           class="rounded-lg shadow-lg max-w-full">
+    </div>
+    <p class="text-gray-400 text-sm mt-2 text-center">
+      Before and after flood event as detected by SAR
+    </p>
+  </div>
+</section>
+
+
+ <!-- Why is SAR Different -->
+<section class="grid md:grid-cols-2 gap-8 items-center p-8 bg-black">
+  <div>
+    <h2 class="text-2xl font-bold text-cyan-400 flex items-center mb-4">
+      👁 Why is SAR Different?
+    </h2>
+    <ul class="space-y-2 text-gray-300">
+      <li>✔ Works 24/7, regardless of weather or sunlight.</li>
+      <li>✔ Radar waves can penetrate vegetation canopy and even dry soil.</li>
+      <li>✔ Advanced SAR techniques can measure ground movement with millimeter accuracy.</li>
+    </ul>
+  </div>
+
+<div class="flex flex-col items-center">
+<div class="p-[3px] rounded-lg bg-gradient-to-r from-cyan-200 via-cyan-400 to-blue-700">
+    <img src="/NASA_Project/assets/sar-vs-optical-DJ97U8Pl.jpg" 
+         alt="Optical vs SAR comparison"
+         class="rounded-lg shadow-lg max-w-full">
+  </div>
+  <p class="text-center text-gray-400 text-sm mt-2">
+    Optical (left) vs SAR (right)
+  </p>
+</div>
+</section>
+
+    <!-- Info Section -->
+    <div class="container p-8 bg-black">
+      <div style="text-align: center; margin-bottom: 48px;">
+        <h2 style="font-size: 36px; font-weight: 700; margin-bottom: 16px;">Why Risk Monitoring Matters</h2>
+        <p style="font-size: 18px; color: hsl(var(--muted-foreground)); max-width: 800px; margin: 0 auto;">
+          Natural disasters like floods and landslides cause significant loss of life and property. 
+          Our system provides early warnings to save lives and protect communities.
+        </p>
+      </div>
+      
+      <div class="grid-3">
+        <div class="card">
+          <div style="font-size: 48px; font-weight: 700; color: hsl(var(--primary)); margin-bottom: 8px;">24/7</div>
+          <h3 style="font-size: 20px; margin-bottom: 8px;">Continuous Monitoring</h3>
+          <p style="color: hsl(var(--muted-foreground));">Real-time satellite data processing for immediate risk detection</p>
+        </div>
+        
+        <div class="card">
+          <div style="font-size: 48px; font-weight: 700; color: hsl(var(--warning)); margin-bottom: 8px;">InSAR</div>
+          <h3 style="font-size: 20px; margin-bottom: 8px;">Advanced Technology</h3>
+          <p style="color: hsl(var(--muted-foreground));">Synthetic Aperture Radar detects ground deformation with millimeter precision</p>
+        </div>
+        
+        <div class="card">
+          <div style="font-size: 48px; font-weight: 700; color: hsl(var(--destructive)); margin-bottom: 8px;">AI</div>
+          <h3 style="font-size: 20px; margin-bottom: 8px;">Smart Alerts</h3>
+          <p style="color: hsl(var(--muted-foreground));">Machine learning predicts risks and sends automated multi-language warnings</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Flood Monitoring Section -->
+  <section id="flood" class="section">
+    <div class="container">
+      <div class="page-header">
+        <h1 class="page-title">
+          <span class="page-icon">🌊</span>
+          Flood Monitoring System
+        </h1>
+        <p class="page-description">Real-time flood risk assessment using NASA's Global Flood Monitoring System</p>
+      </div>
+      
+      <div class="layout-sidebar">
+        <div>
+          <div class="map-container" style="position: relative;">
+            <div class="map-view-toggle">
+              <button onclick="toggleMapView('floodMap', this.parentElement)" class="active" title="2D Map">🗺️</button>
+              <button onclick="toggleMapView('floodMap', this.parentElement)" title="Satellite">🛰️</button>
+            </div>
+            <div id="floodMap" class="map"></div>
+          </div>
+        </div>
+        
+        <div>
+          <div class="card">
+            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+              <span style="color: hsl(var(--destructive));">⚠️</span>
+              Active Risk Zones
+            </h3>
+            <div class="zone-list" id="floodZoneList"></div>
+          </div>
+          
+          <div class="card info-box" style="background: hsl(var(--primary) / 0.1); border-color: hsl(var(--primary) / 0.3);">
+            <h4>📡 Data Sources</h4>
+            <ul>
+              <li>• NASA GPM IMERG Rainfall</li>
+              <li>• MODIS Flood Detection</li>
+              <li>• Sentinel-1 SAR Imagery</li>
+              <li>• Ground Station Networks</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Landslide Monitoring Section -->
+  <section id="landslide" class="section">
+    <div class="container">
+      <div class="page-header">
+        <h1 class="page-title">
+          <span class="page-icon">🏔️</span>
+          Landslide Risk Detection
+        </h1>
+        <p class="page-description">InSAR-based ground deformation monitoring for landslide prediction</p>
+      </div>
+      
+      <div class="layout-sidebar">
+        <div>
+          <div class="map-container" style="position: relative;">
+            <div class="map-view-toggle">
+              <button onclick="toggleMapView('landslideMap', this.parentElement)" class="active" title="2D Map">🗺️</button>
+              <button onclick="toggleMapView('landslideMap', this.parentElement)" title="Satellite">🛰️</button>
+            </div>
+            <div id="landslideMap" class="map"></div>
+          </div>
+        </div>
+        
+        <div>
+          <div class="card">
+            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+              <span style="color: hsl(var(--warning));">⚠️</span>
+              Deformation Zones
+            </h3>
+            <div class="zone-list" id="landslideZoneList"></div>
+          </div>
+          
+          <div class="card info-box" style="background: hsl(var(--warning) / 0.1); border-color: hsl(var(--warning) / 0.3);">
+            <h4>📊 InSAR Technology</h4>
+            <p style="font-size: 14px; color: hsl(var(--muted-foreground)); margin-bottom: 12px;">
+              Interferometric Synthetic Aperture Radar analyzes phase differences in radar signals to detect ground movement.
+            </p>
+            <ul>
+              <li>• Sentinel-1 SAR Data</li>
+              <li>• ALOS-2 PALSAR</li>
+              <li>• TerraSAR-X Imagery</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Live Maps Section -->
+  <section id="live" class="section">
+    <div class="container">
+      <div class="page-header">
+        <h1 class="page-title">
+          <span class="page-icon">🛰️</span>
+          Live Integrated Dashboard
+        </h1>
+        <p class="page-description">Comprehensive view of all risk monitoring systems</p>
+      </div>
+      
+      <!-- Tab Navigation -->
+      <div class="tabs-list">
+        <button class="tab-trigger active" onclick="switchLiveTab('combined')" data-tab="combined">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+          </svg>
+          Combined View
+        </button>
+        <button class="tab-trigger" onclick="switchLiveTab('flood')" data-tab="flood">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M7.5 8.5C9 9.5 11 9.5 12.5 8.5C14 7.5 16 7.5 17.5 8.5M7.5 15.5C9 16.5 11 16.5 12.5 15.5C14 14.5 16 14.5 17.5 15.5"></path>
+          </svg>
+          Flood Only
+        </button>
+        <button class="tab-trigger" onclick="switchLiveTab('landslide')" data-tab="landslide">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 21h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-4L8 3v18z"></path>
+          </svg>
+          Landslide Only
+        </button>
+        <button class="tab-trigger" onclick="switchLiveTab('satellite')" data-tab="satellite">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 7L9 3 5 7l4 4"></path>
+            <path d="m17 11 4 4-4 4-4-4"></path>
+            <path d="m8 12 4 4 6-6-4-4Z"></path>
+            <path d="m16 8 3-3"></path>
+            <path d="M9 21a6 6 0 0 0-6-6"></path>
+          </svg>
+          Satellite View
+        </button>
+      </div>
+      
+      <!-- Combined View Tab -->
+      <div id="tab-combined" class="tab-content active">
+        <div class="grid-2">
+          <div>
+            <div style="margin-bottom: 12px;">
+              <span class="badge" style="background: hsl(var(--primary)); color: hsl(var(--primary-foreground));">
+                🌊 Flood Risk Layer
+              </span>
+            </div>
+            <div class="map-container" style="height: 400px; position: relative;">
+              <div class="map-view-toggle">
+                <button onclick="toggleMapView('liveFloodMap', this.parentElement)" class="active" title="2D Map">🗺️</button>
+                <button onclick="toggleMapView('liveFloodMap', this.parentElement)" title="Satellite">🛰️</button>
+              </div>
+              <div id="liveFloodMap" class="map"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div style="margin-bottom: 12px;">
+              <span class="badge" style="background: hsl(var(--warning)); color: hsl(var(--warning-foreground));">
+                🏔️ Landslide Risk Layer
+              </span>
+            </div>
+            <div class="map-container" style="height: 400px; position: relative;">
+              <div class="map-view-toggle">
+                <button onclick="toggleMapView('liveLandslideMap', this.parentElement)" class="active" title="2D Map">🗺️</button>
+                <button onclick="toggleMapView('liveLandslideMap', this.parentElement)" title="Satellite">🛰️</button>
+              </div>
+              <div id="liveLandslideMap" class="map"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card" style="margin-top: 24px;">
+          <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">Active Alerts Summary</h3>
+          <div class="stats-grid">
+            <div class="stat-card stat-high">
+              <div class="stat-value" style="color: hsl(var(--destructive));">3</div>
+              <div class="stat-label">High Risk Zones</div>
+            </div>
+            <div class="stat-card stat-moderate">
+              <div class="stat-value" style="color: hsl(var(--warning));">7</div>
+              <div class="stat-label">Moderate Risk Zones</div>
+            </div>
+            <div class="stat-card stat-low">
+              <div class="stat-value" style="color: hsl(var(--success));">12</div>
+              <div class="stat-label">Safe Zones</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Flood Only Tab -->
+      <div id="tab-flood" class="tab-content">
+        <div class="card" style="padding: 0;">
+          <div class="map-container" style="height: 600px; position: relative;">
+            <div class="map-view-toggle">
+              <button onclick="toggleMapView('liveFloodMapFull', this.parentElement)" class="active" title="2D Map">🗺️</button>
+              <button onclick="toggleMapView('liveFloodMapFull', this.parentElement)" title="Satellite">🛰️</button>
+            </div>
+            <div id="liveFloodMapFull" class="map"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Landslide Only Tab -->
+      <div id="tab-landslide" class="tab-content">
+        <div class="card" style="padding: 0;">
+          <div class="map-container" style="height: 600px; position: relative;">
+            <div class="map-view-toggle">
+              <button onclick="toggleMapView('liveLandslideMapFull', this.parentElement)" class="active" title="2D Map">🗺️</button>
+              <button onclick="toggleMapView('liveLandslideMapFull', this.parentElement)" title="Satellite">🛰️</button>
+            </div>
+            <div id="liveLandslideMapFull" class="map"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Satellite View Tab -->
+      <div id="tab-satellite" class="tab-content">
+        <div class="card" style="padding: 0;">
+          <div class="map-container" style="height: 600px; position: relative;">
+            <div class="map-view-toggle">
+              <button onclick="toggleMapView('liveSatelliteMap', this.parentElement)" class="active" title="2D Map">🗺️</button>
+              <button onclick="toggleMapView('liveSatelliteMap', this.parentElement)" title="Satellite">🛰️</button>
+            </div>
+            <div id="liveSatelliteMap" class="map"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Alerts Section -->
+  <section id="alerts" class="section">
+    <div class="container">
+      <div class="page-header">
+        <h1 class="page-title">
+          <span class="page-icon">🔔</span>
+          Alert & Notification System
+        </h1>
+        <p class="page-description">Real-time SMS, voice, and push notifications for high-risk zones</p>
+      </div>
+      
+      <div class="layout-sidebar">
+        <div style="order: 2;">
+          <div class="card">
+            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">Subscribe to Alerts</h3>
+            <form id="alertForm">
+              <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="tel" id="phone" placeholder="+91 98765 43210">
+              </div>
+              
+              <div class="form-group">
+                <label for="language">Preferred Language</label>
+                <select id="language">
+                  <option value="english">English</option>
+                  <option value="hindi">हिंदी (Hindi)</option>
+                  <option value="telugu">తెలుగు (Telugu)</option>
+                  <option value="tamil">தமிழ் (Tamil)</option>
+                  <option value="bengali">বাংলা (Bengali)</option>
+                  <option value="marathi">मराठी (Marathi)</option>
+                </select>
+              </div>
+              
+              <button type="submit" class="btn btn-full">
+                🔔 Subscribe to Alerts
+              </button>
+            </form>
+            <div id="subscribeMessage" style="margin-top: 16px; padding: 12px; border-radius: 8px; display: none;"></div>
+          </div>
+          
+          <div class="card info-box" style="background: hsl(var(--primary) / 0.1); border-color: hsl(var(--primary) / 0.3); margin-top: 16px;">
+            <h4>✅ Alert Methods</h4>
+            <ul>
+              <li>💬 SMS Text Messages</li>
+              <li>📞 Voice Call Alerts</li>
+              <li>🔔 Push Notifications</li>
+              <li>📧 Email Updates</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div style="order: 1;">
+          <div class="card">
+            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">Recent Alerts</h3>
+            <div id="alertsList"></div>
+          </div>
+          
+          <div class="card" style="margin-top: 16px; background: linear-gradient(135deg, hsl(var(--destructive) / 0.1), hsl(var(--warning) / 0.1)); border-color: hsl(var(--destructive) / 0.3);">
+            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+              🔔 How Alerts Work
+            </h3>
+            <p style="color: hsl(var(--muted-foreground)); margin-bottom: 16px; font-size: 14px;">
+              Our automated alert system monitors all risk zones 24/7. When a high-risk situation is detected:
+            </p>
+            <ul style="list-style: none; padding: 0;">
+              <li style="display: flex; gap: 8px; margin-bottom: 8px; font-size: 14px;">
+                <span style="color: hsl(var(--success));">✅</span>
+                <span style="color: hsl(var(--muted-foreground));">AI analyzes satellite data and detects potential threats</span>
+              </li>
+              <li style="display: flex; gap: 8px; margin-bottom: 8px; font-size: 14px;">
+                <span style="color: hsl(var(--success));">✅</span>
+                <span style="color: hsl(var(--muted-foreground));">Automated SMS alerts are sent to all subscribed numbers in affected areas</span>
+              </li>
+              <li style="display: flex; gap: 8px; margin-bottom: 8px; font-size: 14px;">
+                <span style="color: hsl(var(--success));">✅</span>
+                <span style="color: hsl(var(--muted-foreground));">Voice calls deliver urgent warnings in multiple languages</span>
+              </li>
+              <li style="display: flex; gap: 8px; font-size: 14px;">
+                <span style="color: hsl(var(--success));">✅</span>
+                <span style="color: hsl(var(--muted-foreground));">Local authorities receive detailed reports for emergency response</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI Chatbot -->
+  <button class="chatbot-toggle" onclick="toggleChatbot()">🤖</button>
+  
+  <div class="chatbot-container" id="chatbotContainer">
+    <div class="chatbot-header">
+      <h3>🤖 AI Risk Advisor</h3>
+      <button class="chatbot-close" onclick="toggleChatbot()">×</button>
+    </div>
+    
+    <div class="chatbot-mode">
+      <button class="mode-btn active" data-mode="simple" onclick="setChatMode('simple')">Simple</button>
+      <button class="mode-btn" data-mode="technical" onclick="setChatMode('technical')">Technical</button>
+    </div>
+    
+    <div class="chatbot-messages" id="chatbotMessages">
+      <div class="message message-bot">
+        👋 Hi! I'm your AI Risk Advisor. I can help you understand flood and landslide risks in simple terms and suggest safety actions. Ask me anything!
+      </div>
+    </div>
+    
+    <div class="chatbot-input">
+      <input type="text" id="chatInput" placeholder="Ask about risks in your area..." onkeypress="handleChatKeypress(event)">
+      <button onclick="sendChatMessage()">Send</button>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <script>
+    // Navigation
+    function showSection(sectionId) {
+      // Hide all sections
+      document.querySelectorAll('.section').forEach(section => {
+        section.classList.remove('active');
+      });
+      
+      // Show selected section
+      document.getElementById(sectionId).classList.add('active');
+      
+      // Update nav buttons
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-section') === sectionId) {
+          btn.classList.add('active');
+        }
+      });
+      
+      // Initialize maps when their section is shown
+      if (sectionId === 'flood' && !window.floodMapInit) {
+        initFloodMap();
+        window.floodMapInit = true;
+      }
+      if (sectionId === 'landslide' && !window.landslideMapInit) {
+        initLandslideMap();
+        window.landslideMapInit = true;
+      }
+      if (sectionId === 'live' && !window.liveMapsInit) {
+        initLiveMaps();
+        window.liveMapsInit = true;
+      }
+      
+      // Scroll to top
+      window.scrollTo(0, 0);
+    }
+    
+    // Data
+    const floodZones = [
+      { name: 'Kerala Coast', pos: [8.5241, 76.9366], risk: 'high', status: 'Active Monitoring', lat: '8.5241° N', lon: '76.9366° E', radius: 50000, color: '#ef4444' },
+      { name: 'Mumbai Region', pos: [19.0760, 72.8777], risk: 'moderate', status: 'Watch', lat: '19.0760° N', lon: '72.8777° E', radius: 40000, color: '#f59e0b' },
+      { name: 'Assam Valley', pos: [26.2006, 92.9376], risk: 'high', status: 'Warning Issued', lat: '26.2006° N', lon: '92.9376° E', radius: 45000, color: '#ef4444' },
+      { name: 'Gujarat Plains', pos: [22.2587, 71.1924], risk: 'low', status: 'Safe', lat: '22.2587° N', lon: '71.1924° E', radius: 30000, color: '#22c55e' },
+    ];
+    
+    const landslideZones = [
+      { name: 'Western Ghats', pos: [15.3173, 75.7139], deformation: '12mm', risk: 'high', status: 'Critical', trend: 'Increasing', radius: 40000, color: '#ef4444' },
+      { name: 'Himalayan Region', pos: [30.0668, 79.0193], deformation: '7mm', risk: 'moderate', status: 'Monitoring', trend: 'Stable', radius: 50000, color: '#f59e0b' },
+      { name: 'Northeast Hills', pos: [25.5788, 91.8933], deformation: '15mm', risk: 'high', status: 'Alert', trend: 'Increasing', radius: 35000, color: '#ef4444' },
+      { name: 'Central Highlands', pos: [23.4732, 77.9479], deformation: '3mm', risk: 'low', status: 'Normal', trend: 'Stable', radius: 30000, color: '#22c55e' },
+    ];
+    
+    const recentAlerts = [
+      { time: '2 hours ago', type: 'Flood', severity: 'high', location: 'Kerala Coast', message: 'High flood risk detected. Immediate evacuation recommended.' },
+      { time: '5 hours ago', type: 'Landslide', severity: 'high', location: 'Western Ghats', message: 'Ground deformation detected. Alert issued to local authorities.' },
+      { time: '1 day ago', type: 'Flood', severity: 'moderate', location: 'Mumbai Region', message: 'Moderate flood risk. Monitor situation closely.' },
+      { time: '2 days ago', type: 'Landslide', severity: 'moderate', location: 'Northeast Hills', message: 'Minor ground movement detected. Continued monitoring.' },
+    ];
+    
+    // Flood Map
+    let floodMap;
+    function initFloodMap() {
+      floodMap = L.map('floodMap').setView([20.5937, 78.9629], 5);
+      const floodBaseTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(floodMap);
+      
+      mapInstances['floodMap'] = floodMap;
+      mapTileLayers['floodMap'] = floodBaseTileLayer;
+      
+      floodZones.forEach(zone => {
+        const circle = L.circle(zone.pos, {
+          radius: zone.radius,
+          color: zone.color,
+          fillColor: zone.color,
+          fillOpacity: 0.3,
+          weight: 2
+        }).addTo(floodMap);
+        
+        circle.bindPopup(`<strong>${zone.name}</strong><br/>Risk: <strong>${zone.risk.toUpperCase()}</strong><br/>Status: ${zone.status}`);
+      });
+      
+      // Populate zone list
+      const zoneList = document.getElementById('floodZoneList');
+      floodZones.forEach(zone => {
+        const item = document.createElement('div');
+        item.className = 'zone-item card';
+        item.innerHTML = `
+          <div class="zone-header">
+            <div class="zone-name">${zone.name}</div>
+            <span class="badge badge-${zone.risk}">${zone.risk.toUpperCase()}</span>
+          </div>
+          <div class="zone-details">
+            <div class="zone-detail">
+              <span class="zone-label">Coordinates:</span>
+              <span class="zone-value">${zone.lat}, ${zone.lon}</span>
+            </div>
+            <div class="zone-detail">
+              <span class="zone-label">Status:</span>
+              <span class="zone-value" style="color: hsl(var(--primary));">${zone.status}</span>
+            </div>
+          </div>
+        `;
+        item.onclick = () => {
+          floodMap.setView(zone.pos, 8);
+          document.querySelectorAll('#floodZoneList .zone-item').forEach(i => i.classList.remove('selected'));
+          item.classList.add('selected');
+        };
+        zoneList.appendChild(item);
+      });
+    }
+    
+    // Landslide Map
+    let landslideMap;
+    function initLandslideMap() {
+      landslideMap = L.map('landslideMap').setView([23.5937, 78.9629], 5);
+      const landslideBaseTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(landslideMap);
+      
+      mapInstances['landslideMap'] = landslideMap;
+      mapTileLayers['landslideMap'] = landslideBaseTileLayer;
+      
+      landslideZones.forEach(zone => {
+        const circle = L.circle(zone.pos, {
+          radius: zone.radius,
+          color: zone.color,
+          fillColor: zone.color,
+          fillOpacity: 0.3,
+          weight: 2
+        }).addTo(landslideMap);
+        
+        circle.bindPopup(`<strong>${zone.name}</strong><br/>Deformation: <strong>${zone.deformation}</strong><br/>Risk: <strong>${zone.risk.toUpperCase()}</strong><br/>Trend: ${zone.trend}`);
+      });
+      
+      // Populate zone list
+      const zoneList = document.getElementById('landslideZoneList');
+      landslideZones.forEach(zone => {
+        const item = document.createElement('div');
+        item.className = 'zone-item card';
+        item.innerHTML = `
+          <div class="zone-header">
+            <div class="zone-name">${zone.name}</div>
+            <span class="badge badge-${zone.risk}">${zone.risk.toUpperCase()}</span>
+          </div>
+          <div class="zone-details">
+            <div class="zone-detail">
+              <span class="zone-label">Deformation:</span>
+              <span class="zone-value" style="color: hsl(var(--warning));">${zone.deformation}</span>
+            </div>
+            <div class="zone-detail">
+              <span class="zone-label">Status:</span>
+              <span class="zone-value" style="color: hsl(var(--primary));">${zone.status}</span>
+            </div>
+            <div class="zone-detail">
+              <span class="zone-label">Trend:</span>
+              <span class="zone-value" style="color: ${zone.trend === 'Increasing' ? 'hsl(var(--destructive))' : 'hsl(var(--success))'};">${zone.trend}</span>
+            </div>
+          </div>
+        `;
+        item.onclick = () => {
+          landslideMap.setView(zone.pos, 8);
+          document.querySelectorAll('#landslideZoneList .zone-item').forEach(i => i.classList.remove('selected'));
+          item.classList.add('selected');
+        };
+        zoneList.appendChild(item);
+      });
+    }
+    
+    // Live Maps
+    let liveFloodMap, liveLandslideMap, liveFloodMapFull, liveLandslideMapFull, liveSatelliteMap;
+    let liveTabMapsInit = { combined: false, flood: false, landslide: false, satellite: false };
+    
+    // Store map instances and their tile layers for toggle functionality
+    let mapInstances = {};
+    let mapTileLayers = {};
+    
+    // Toggle between 2D and Satellite view
+    function toggleMapView(mapId, toggleContainer) {
+      const buttons = toggleContainer.querySelectorAll('button');
+      const map = mapInstances[mapId];
+      
+      if (!map) return;
+
+      // Toggle active state
+      buttons.forEach((btn, index) => {
+        if (btn === event.target) {
+          btn.classList.add('active');
+          
+          // Remove existing tile layer
+          if (mapTileLayers[mapId]) {
+            map.removeLayer(mapTileLayers[mapId]);
+          }
+
+          // Add appropriate tile layer
+          if (index === 0) {
+            // 2D Map view
+            mapTileLayers[mapId] = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+          } else {
+            // Satellite view
+            mapTileLayers[mapId] = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+              attribution: '© Esri'
+            }).addTo(map);
+          }
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+    
+    function initLiveMaps() {
+      // Combined view - Flood map
+      if (!liveFloodMap) {
+        liveFloodMap = L.map('liveFloodMap').setView([20.5937, 78.9629], 5);
+        const floodTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(liveFloodMap);
+        
+        mapInstances['liveFloodMap'] = liveFloodMap;
+        mapTileLayers['liveFloodMap'] = floodTileLayer;
+        
+        floodZones.forEach(zone => {
+          L.circle(zone.pos, {
+            radius: zone.radius,
+            color: zone.color,
+            fillColor: zone.color,
+            fillOpacity: 0.3,
+            weight: 2
+          }).addTo(liveFloodMap).bindPopup(`<strong>${zone.name}</strong><br/>Risk: <strong>${zone.risk.toUpperCase()}</strong>`);
+        });
+      }
+      
+      // Combined view - Landslide map
+      if (!liveLandslideMap) {
+        liveLandslideMap = L.map('liveLandslideMap').setView([23.5937, 78.9629], 5);
+        const landslideTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(liveLandslideMap);
+        
+        mapInstances['liveLandslideMap'] = liveLandslideMap;
+        mapTileLayers['liveLandslideMap'] = landslideTileLayer;
+        
+        landslideZones.forEach(zone => {
+          L.circle(zone.pos, {
+            radius: zone.radius,
+            color: zone.color,
+            fillColor: zone.color,
+            fillOpacity: 0.3,
+            weight: 2
+          }).addTo(liveLandslideMap).bindPopup(`<strong>${zone.name}</strong><br/>Deformation: <strong>${zone.deformation}</strong>`);
+        });
+      }
+      
+      liveTabMapsInit.combined = true;
+    }
+    
+    function initLiveFloodMapFull() {
+      if (!liveFloodMapFull) {
+        liveFloodMapFull = L.map('liveFloodMapFull').setView([20.5937, 78.9629], 5);
+        const fullFloodTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(liveFloodMapFull);
+        
+        mapInstances['liveFloodMapFull'] = liveFloodMapFull;
+        mapTileLayers['liveFloodMapFull'] = fullFloodTileLayer;
+        
+        floodZones.forEach(zone => {
+          L.circle(zone.pos, {
+            radius: zone.radius,
+            color: zone.color,
+            fillColor: zone.color,
+            fillOpacity: 0.3,
+            weight: 2
+          }).addTo(liveFloodMapFull).bindPopup(`<strong>${zone.name}</strong><br/>Risk: <strong>${zone.risk.toUpperCase()}</strong><br/>Status: ${zone.status}`);
+        });
+      }
+      liveTabMapsInit.flood = true;
+    }
+    
+    function initLiveLandslideMapFull() {
+      if (!liveLandslideMapFull) {
+        liveLandslideMapFull = L.map('liveLandslideMapFull').setView([23.5937, 78.9629], 5);
+        const fullLandslideTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(liveLandslideMapFull);
+        
+        mapInstances['liveLandslideMapFull'] = liveLandslideMapFull;
+        mapTileLayers['liveLandslideMapFull'] = fullLandslideTileLayer;
+        
+        landslideZones.forEach(zone => {
+          L.circle(zone.pos, {
+            radius: zone.radius,
+            color: zone.color,
+            fillColor: zone.color,
+            fillOpacity: 0.3,
+            weight: 2
+          }).addTo(liveLandslideMapFull).bindPopup(`<strong>${zone.name}</strong><br/>Deformation: <strong>${zone.deformation}</strong><br/>Risk: <strong>${zone.risk.toUpperCase()}</strong>`);
+        });
+      }
+      liveTabMapsInit.landslide = true;
+    }
+    
+    function initLiveSatelliteMap() {
+      if (!liveSatelliteMap) {
+        liveSatelliteMap = L.map('liveSatelliteMap').setView([22.5937, 78.9629], 5);
+        const satelliteTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(liveSatelliteMap);
+        
+        mapInstances['liveSatelliteMap'] = liveSatelliteMap;
+        mapTileLayers['liveSatelliteMap'] = satelliteTileLayer;
+        
+        // Show both flood and landslide zones on satellite view
+        floodZones.forEach(zone => {
+          L.circle(zone.pos, {
+            radius: zone.radius,
+            color: zone.color,
+            fillColor: zone.color,
+            fillOpacity: 0.2,
+            weight: 2
+          }).addTo(liveSatelliteMap).bindPopup(`<strong>${zone.name}</strong><br/>Type: Flood<br/>Risk: <strong>${zone.risk.toUpperCase()}</strong>`);
+        });
+        
+        landslideZones.forEach(zone => {
+          L.circle(zone.pos, {
+            radius: zone.radius,
+            color: zone.color,
+            fillColor: zone.color,
+            fillOpacity: 0.2,
+            weight: 2,
+            dashArray: '5, 5'
+          }).addTo(liveSatelliteMap).bindPopup(`<strong>${zone.name}</strong><br/>Type: Landslide<br/>Deformation: <strong>${zone.deformation}</strong>`);
+        });
+      }
+      liveTabMapsInit.satellite = true;
+    }
+    
+    // Tab switching for Live Maps
+    function switchLiveTab(tabName) {
+      // Update tab triggers
+      document.querySelectorAll('.tab-trigger').forEach(trigger => {
+        trigger.classList.remove('active');
+      });
+      document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+      
+      // Update tab content
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+      
+      // Initialize maps for the tab if not already initialized
+      if (tabName === 'combined' && !liveTabMapsInit.combined) {
+        setTimeout(() => initLiveMaps(), 100);
+      } else if (tabName === 'flood' && !liveTabMapsInit.flood) {
+        setTimeout(() => initLiveFloodMapFull(), 100);
+      } else if (tabName === 'landslide' && !liveTabMapsInit.landslide) {
+        setTimeout(() => initLiveLandslideMapFull(), 100);
+      } else if (tabName === 'satellite' && !liveTabMapsInit.satellite) {
+        setTimeout(() => initLiveSatelliteMap(), 100);
+      }
+      
+      // Invalidate map size to ensure proper rendering
+      setTimeout(() => {
+        if (tabName === 'combined') {
+          if (liveFloodMap) liveFloodMap.invalidateSize();
+          if (liveLandslideMap) liveLandslideMap.invalidateSize();
+        } else if (tabName === 'flood' && liveFloodMapFull) {
+          liveFloodMapFull.invalidateSize();
+        } else if (tabName === 'landslide' && liveLandslideMapFull) {
+          liveLandslideMapFull.invalidateSize();
+        } else if (tabName === 'satellite' && liveSatelliteMap) {
+          liveSatelliteMap.invalidateSize();
+        }
+      }, 200);
+    }
+    
+    // Alerts
+    const alertsList = document.getElementById('alertsList');
+    recentAlerts.forEach(alert => {
+      const item = document.createElement('div');
+      item.className = `alert-item alert-${alert.severity}`;
+      item.innerHTML = `
+        <div class="alert-header">
+          <div class="alert-location">${alert.location}</div>
+          <div class="alert-time">${alert.time}</div>
+        </div>
+        <div class="alert-meta">${alert.type} • <span class="badge badge-${alert.severity}">${alert.severity.toUpperCase()}</span></div>
+        <div class="alert-message">${alert.message}</div>
+      `;
+      alertsList.appendChild(item);
+    });
+    
+    // Alert subscription
+    document.getElementById('alertForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const phone = document.getElementById('phone').value;
+      const language = document.getElementById('language').value;
+      const message = document.getElementById('subscribeMessage');
+      
+      if (phone) {
+        message.style.display = 'block';
+        message.style.background = 'hsl(var(--success) / 0.1)';
+        message.style.color = 'hsl(var(--success))';
+        message.style.border = '1px solid hsl(var(--success) / 0.3)';
+        message.textContent = `✅ Subscribed! You will receive ${language} alerts at ${phone}.`;
+      } else {
+        message.style.display = 'block';
+        message.style.background = 'hsl(var(--destructive) / 0.1)';
+        message.style.color = 'hsl(var(--destructive))';
+        message.style.border = '1px solid hsl(var(--destructive) / 0.3)';
+        message.textContent = '❌ Please enter a phone number.';
+      }
+    });
+    
+    // Chatbot Functionality
+    let chatMode = 'simple'; // 'simple' or 'technical'
+    
+    function toggleChatbot() {
+      const container = document.getElementById('chatbotContainer');
+      container.classList.toggle('open');
+    }
+    
+    function setChatMode(mode) {
+      chatMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+      });
+      
+      const messages = document.getElementById('chatbotMessages');
+      const modeMessage = document.createElement('div');
+      modeMessage.className = 'message message-bot';
+      modeMessage.innerHTML = mode === 'simple' 
+        ? '📝 Switched to Simple Mode. I\'ll explain everything in easy-to-understand terms.'
+        : '🔬 Switched to Technical Mode. I\'ll provide detailed scientific explanations.';
+      messages.appendChild(modeMessage);
+      messages.scrollTop = messages.scrollHeight;
+    }
+    
+    function handleChatKeypress(event) {
+      if (event.key === 'Enter') {
+        sendChatMessage();
+      }
+    }
+    
+    function sendChatMessage() {
+      const input = document.getElementById('chatInput');
+      const message = input.value.trim();
+      
+      if (!message) return;
+      
+      const messages = document.getElementById('chatbotMessages');
+      
+      // Add user message
+      const userMsg = document.createElement('div');
+      userMsg.className = 'message message-user';
+      userMsg.textContent = message;
+      messages.appendChild(userMsg);
+      
+      input.value = '';
+      
+      // Generate AI response
+      setTimeout(() => {
+        const botMsg = document.createElement('div');
+        botMsg.className = 'message message-bot';
+        botMsg.innerHTML = generateAIResponse(message.toLowerCase());
+        messages.appendChild(botMsg);
+        messages.scrollTop = messages.scrollHeight;
+      }, 800);
+    }
+    
+    function generateAIResponse(query) {
+      // Data Translation: Translate technical data to simple language
+      if (query.includes('sar') || query.includes('insar') || query.includes('backscatter')) {
+        return chatMode === 'simple'
+          ? '📡 <strong>InSAR</strong> is like a space-based measuring tape. Satellites send radar signals to Earth and measure how the ground moves. Even tiny movements (a few millimeters) can tell us if a landslide might happen. Think of it as checking if a hill is slowly sliding down.'
+          : '📡 <strong>InSAR (Interferometric Synthetic Aperture Radar)</strong> analyzes phase differences between radar signals to detect ground deformation. Backscatter coefficient changes > 5 dB indicate surface property changes like inundation. Sentinel-1 C-band SAR provides 6-12 day temporal resolution at 5×20m spatial resolution.';
+      }
+      
+      // Risk Notifier: Check for specific location queries
+      if (query.includes('kerala')) {
+        return chatMode === 'simple'
+          ? '⚠️ <strong>Kerala Coast - HIGH FLOOD RISK</strong><br><br>A flood has been detected covering farmlands and low-lying areas. About 1,200 people may be affected in coastal villages.<br><br><span class="action">⚡ ACTION NEEDED:</span><br>• Move to higher ground immediately<br>• Avoid traveling on coastal roads<br>• Emergency shelter available at Kerala Relief Center (8 km away)'
+          : '⚠️ <strong>Kerala Coast - HIGH RISK</strong><br><br>SAR backscatter analysis indicates water accumulation. MODIS flood detection confirms inundation extent of ~45 km². GPM IMERG shows 150mm rainfall in 24h.<br><br>Risk Level: HIGH (Coordinates: 8.5241°N, 76.9366°E)<br>Status: Active Monitoring';
+      }
+      
+      if (query.includes('mumbai')) {
+        return chatMode === 'simple'
+          ? '⚠️ <strong>Mumbai Region - MODERATE FLOOD RISK</strong><br><br>Heavy rain is causing water to collect in some areas. The situation is being watched closely.<br><br><span class="action">⚡ STAY PREPARED:</span><br>• Keep emergency supplies ready<br>• Monitor local news<br>• Avoid waterlogged roads<br>• Have evacuation route planned'
+          : '⚠️ <strong>Mumbai Region - MODERATE RISK</strong><br><br>Sentinel-1 SAR analysis shows localized flooding. Rainfall: 85mm/24h. Water accumulation in low-lying areas.<br><br>Risk Level: MODERATE (19.0760°N, 72.8777°E)<br>Status: Watch';
+      }
+      
+      if (query.includes('western ghats') || query.includes('ghats')) {
+        return chatMode === 'simple'
+          ? '⚠️ <strong>Western Ghats - CRITICAL LANDSLIDE RISK</strong><br><br>The mountain is slowly moving (12mm). After heavy rain, slopes can suddenly slide down like a mudslide.<br><br><span class="action">⚡ EVACUATE NOW:</span><br>• Leave hillside homes immediately<br>• Move to flat, stable ground<br>• Shelter: Ghats Relief Camp (6 km east)<br>• Avoid steep roads and valleys'
+          : '⚠️ <strong>Western Ghats - CRITICAL RISK</strong><br><br>InSAR detected 12mm ground deformation (increasing trend). Slope stability analysis indicates high landslide probability.<br><br>Deformation: 12mm | Trend: Increasing<br>Risk Level: HIGH (15.3173°N, 75.7139°E)<br>Status: Critical Alert Issued';
+      }
+      
+      // Action Advisor: Provide specific safety actions
+      if (query.includes('what should i do') || query.includes('what to do') || query.includes('action')) {
+        const hasFlood = query.includes('flood');
+        const hasLandslide = query.includes('landslide');
+        
+        if (hasFlood) {
+          return chatMode === 'simple'
+            ? '<span class="action">🚨 FLOOD SAFETY ACTIONS:</span><br><br>1. <strong>Move Up:</strong> Go to higher floors or higher ground<br>2. <strong>Turn Off Power:</strong> Switch off electricity to prevent shocks<br>3. <strong>Emergency Kit:</strong> Take water, food, phone, medicine<br>4. <strong>Stay Informed:</strong> Listen to local radio/TV for updates<br>5. <strong>Avoid Water:</strong> Don\'t walk or drive through floodwater<br><br>📞 Emergency: Call 108 (India Disaster Helpline)'
+            : '<span class="action">🚨 FLOOD RESPONSE PROTOCOL:</span><br><br>1. Vertical evacuation to elevated structures<br>2. Disconnect electrical systems<br>3. Secure emergency supplies (72h minimum)<br>4. Monitor official disaster management channels<br>5. Avoid traversing inundated areas (depth unknown)<br><br>📞 NDRF Helpline: 108';
+        }
+        
+        if (hasLandslide) {
+          return chatMode === 'simple'
+            ? '<span class="action">🚨 LANDSLIDE SAFETY ACTIONS:</span><br><br>1. <strong>Leave Fast:</strong> Don\'t wait - evacuate hillside areas now<br>2. <strong>Go Sideways:</strong> Move perpendicular (sideways) to the slide path<br>3. <strong>Avoid Valleys:</strong> Don\'t go downhill into valleys<br>4. <strong>Watch for Signs:</strong> Cracks in ground, tilting trees, sudden water springs<br>5. <strong>Alert Others:</strong> Warn neighbors, especially elderly<br><br>📞 Emergency: Call 108'
+            : '<span class="action">🚨 LANDSLIDE EVACUATION PROTOCOL:</span><br><br>1. Immediate evacuation from high-risk slope zones<br>2. Lateral displacement away from slide trajectory<br>3. Avoid debris flow paths (valley bottoms)<br>4. Monitor precursor indicators (ground cracks, surface deformation)<br>5. Alert local disaster management authorities<br><br>📞 NDMA Helpline: 108';
+        }
+        
+        return '<span class="action">⚡ GENERAL SAFETY ACTIONS:</span><br><br>For specific advice, please mention if you\'re concerned about flood or landslide risk. I can give you detailed safety steps for your situation.';
+      }
+      
+      // Education Mode: Explain like I'm 5
+      if (query.includes('explain') || query.includes('how does') || query.includes('why')) {
+        if (query.includes('flood')) {
+          return chatMode === 'simple'
+            ? '🌊 <strong>How We Detect Floods (Like I\'m 5):</strong><br><br>Imagine you have a special camera in space that can "see" water even through clouds. Our satellites use radar (like bat echolocation) to spot where water is collecting on the ground.<br><br>When it rains a lot, rivers fill up and overflow like when you pour too much water in a cup. Our system watches this happen from space and tells people "Hey, water is coming to your area - be careful!"'
+            : '🌊 <strong>Flood Detection Methodology:</strong><br><br>Multi-source approach:<br>• <strong>SAR</strong>: Sentinel-1 C-band detects water surfaces (low backscatter)<br>• <strong>Optical</strong>: MODIS monitors flood extent via NDWI/MNDWI<br>• <strong>Precipitation</strong>: GPM IMERG provides rainfall accumulation<br>• <strong>Models</strong>: Hydrological models predict inundation patterns';
+        }
+        
+        if (query.includes('landslide')) {
+          return chatMode === 'simple'
+            ? '🏔️ <strong>How We Predict Landslides (Like I\'m 5):</strong><br><br>Imagine a hill is like a big pile of building blocks. When it rains, the blocks get slippery and might slide down. Our satellites measure if the hill is moving - even tiny movements you can\'t see!<br><br>It\'s like having a ruler in space that checks "Did this mountain move even 1 centimeter?" If it did, that\'s a warning sign that the blocks might all slide down together (that\'s a landslide!).'
+            : '🏔️ <strong>Landslide Detection Methodology:</strong><br><br>InSAR-based approach:<br>• <strong>Phase Analysis</strong>: Interferometry detects mm-scale ground deformation<br>• <strong>Time Series</strong>: PSInSAR tracks displacement velocity<br>• <strong>Slope Analysis</strong>: DEM-based stability assessment<br>• <strong>Precipitation</strong>: Correlates rainfall with slope failure risk';
+        }
+      }
+      
+      // Two-way communication: Location safety check
+      if (query.includes('my village') || query.includes('my area') || query.includes('is') && query.includes('safe')) {
+        return '📍 To check if your area is safe, please tell me:<br><br>1. Your location name (village/city/district)<br>2. Are you near hills, mountains, or rivers?<br><br>I\'ll check our satellite data and give you current risk status with safety recommendations.';
+      }
+      
+      // Weather forecast queries
+      if (query.includes('rain') || query.includes('weather') || query.includes('tomorrow')) {
+        return '🌧️ <strong>Weather & Risk Forecast:</strong><br><br>Which region are you asking about? Our system integrates:<br><br>• Real-time rainfall data from NASA GPM<br>• 48-hour weather forecasts<br>• Risk probability calculations<br><br>Tell me your location and I\'ll provide the outlook.';
+      }
+      
+      // Default helpful response
+      const responses = [
+        '💡 I can help with:<br><br>🔹 <strong>Explain risks</strong> in your language<br>🔹 <strong>Check safety</strong> of your location<br>🔹 <strong>Emergency actions</strong> for floods/landslides<br>🔹 <strong>Learn</strong> how our technology works<br><br>Try asking: "Is Kerala safe?" or "What should I do in a flood?"',
+        '🤔 I\'m here to help you understand natural hazards. You can ask:<br><br>• "Explain InSAR technology"<br>• "Is my village safe?"<br>• "What to do in landslide?"<br>• "How much rain tomorrow?"<br><br>What would you like to know?'
+      ];
+      
+      return responses[Math.floor(Math.random() * responses.length)];
+    }
+  </script>
+</body>
+</html>
