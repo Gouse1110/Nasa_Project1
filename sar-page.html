@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Earth Risk Monitor - Flood & Landslide (Standalone)</title>
+  <meta name="description" content="NASA-themed Flood & Landslide risk monitoring with Leaflet maps and AI-style alerts. Standalone HTML file." />
+  <link rel="canonical" href="./sar-page.html" />
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    :root{
+      --bg: hsl(220 25% 8%);
+      --fg: hsl(210 40% 98%);
+      --card: hsl(220 20% 12%);
+      --border: hsl(220 15% 25%);
+      --primary: hsl(217 91% 60%);
+      --secondary: hsl(195 100% 45%);
+      --success: hsl(142 76% 36%);
+      --warning: hsl(45 93% 47%);
+      --destructive: hsl(0 84% 60%);
+      --muted: hsl(215 20% 65%);
+      --radius: 12px;
+      --gradient-space: linear-gradient(135deg, hsl(220 25% 8%) 0%, hsl(235 30% 15%) 50%, hsl(220 25% 8%) 100%);
+      --gradient-earth: linear-gradient(135deg, hsl(195 100% 45%) 0%, hsl(217 91% 60%) 50%, hsl(142 76% 36%) 100%);
+    }
+    *{ box-sizing: border-box; }
+    body{ margin:0; background:var(--bg); color:var(--fg); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+    a{ color:inherit; text-decoration:none; }
+
+    /* Navbar */
+    .nav{ position:sticky; top:0; z-index:50; backdrop-filter:saturate(120%) blur(8px); background: color-mix(in oklab, var(--card), transparent 20%); border-bottom:1px solid var(--border); }
+    .nav-inner{ max-width:1200px; margin:0 auto; padding:0 16px; height:64px; display:flex; align-items:center; justify-content:space-between; }
+    .brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:20px; }
+    .brand-badge{ width:32px; height:32px; border-radius:999px; background:var(--primary); box-shadow:0 0 24px hsl(217 91% 60% / 0.4); animation:pulse 2.5s ease-in-out infinite; }
+    .brand-text{ background:var(--gradient-earth); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+
+    .nav-menu{ display:flex; gap:8px; align-items:center; }
+    .btn{ display:inline-flex; align-items:center; gap:8px; height:36px; padding:0 14px; border-radius:999px; border:1px solid transparent; background:transparent; color:var(--fg); cursor:pointer; font-weight:600; }
+    .btn:hover{ background:rgba(255,255,255,0.06); }
+    .btn.active{ background:var(--primary); color: hsl(220 25% 8%); }
+    .btn .icon{ width:18px; height:18px; opacity:0.9; }
+
+    /* Hero */
+    .hero{ position:relative; min-height:60vh; display:grid; place-items:center; overflow:hidden; }
+    .hero::before{ content:""; position:absolute; inset:0; background:var(--gradient-space); opacity:.9; }
+    .orb{ width:80px; height:80px; border-radius:999px; background:var(--primary); box-shadow:0 0 0 16px hsl(217 91% 60% / .12), 0 0 48px hsl(217 91% 60% / .35); animation:float 6s ease-in-out infinite; }
+    .hero-title{ font-size: clamp(28px, 5vw, 56px); font-weight:800; text-align:center; margin-top:24px; background:var(--gradient-earth); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+    .hero-sub{ max-width:760px; text-align:center; margin:12px auto 0; color:var(--muted); font-size:18px; }
+
+    /* Sections */
+    .section{ max-width:1200px; margin:32px auto; padding:0 16px; }
+    .grid{ display:grid; gap:16px; grid-template-columns:repeat(12, 1fr); }
+    .card{ background: color-mix(in oklab, var(--card), transparent 10%); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+    .map-card{ padding:0; overflow:hidden; }
+    .pill{ display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:4px 10px; border:1px solid var(--border); font-size:12px; color:var(--muted); }
+
+    /* Map containers */
+    .map{ height: 420px; width:100%; }
+
+    /* Utilities */
+    .hide{ display:none !important; }
+
+    /* Animations */
+    @keyframes pulse{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.06);} }
+    @keyframes float{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-12px);} }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-inner">
+      <a href="#home" class="brand" onclick="showSection('home')">
+        <div class="brand-badge"></div>
+        <span class="brand-text" aria-label="Earth Risk Monitor">Earth Risk Monitor</span>
+      </a>
+      <nav class="nav-menu">
+        <button class="btn active" id="link-home" onclick="showSection('home')">🏠 Home</button>
+        <button class="btn" id="link-flood" onclick="showSection('flood')">🌊 Flood Monitoring</button>
+        <button class="btn" id="link-landslide" onclick="showSection('landslide')">🏔️ Landslide Monitoring</button>
+        <button class="btn" id="link-live" onclick="showSection('live')">🗺 Live Maps</button>
+        <button class="btn" id="link-alerts" onclick="showSection('alerts')">🔔 Alerts</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Home -->
+    <section id="home" class="section">
+      <div class="hero">
+        <div class="orb"></div>
+      </div>
+      <h1 class="hero-title">Flood & Landslide Risk Monitoring</h1>
+      <p class="hero-sub">Real-time monitoring using satellite observations and InSAR techniques with automated alerts for high-risk zones.</p>
+    </section>
+
+    <!-- Flood Monitoring -->
+    <section id="flood" class="section hide">
+      <div class="grid">
+        <div class="card" style="grid-column: span 12;">
+          <h2>Flood Monitoring</h2>
+          <p class="pill">Data • OpenStreetMap + Synthetic zones</p>
+        </div>
+        <div class="card map-card" style="grid-column: span 12;">
+          <div id="floodMap" class="map"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Landslide Monitoring -->
+    <section id="landslide" class="section hide">
+      <div class="grid">
+        <div class="card" style="grid-column: span 12;">
+          <h2>Landslide Monitoring (InSAR)</h2>
+          <p class="pill">Deformation • Synthetic demo</p>
+        </div>
+        <div class="card map-card" style="grid-column: span 12;">
+          <div id="landslideMap" class="map"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Live Maps -->
+    <section id="live" class="section hide">
+      <div class="grid">
+        <div class="card" style="grid-column: span 12;">
+          <h2>Live Maps</h2>
+          <p class="pill">Combined • Flood + Landslide</p>
+        </div>
+        <div class="card map-card" style="grid-column: span 6; min-width: 280px;">
+          <div id="liveFlood" class="map"></div>
+        </div>
+        <div class="card map-card" style="grid-column: span 6; min-width: 280px;">
+          <div id="liveLandslide" class="map"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Alerts -->
+    <section id="alerts" class="section hide">
+      <div class="grid">
+        <div class="card" style="grid-column: span 12;">
+          <h2>Alerts & Notifications</h2>
+          <p class="pill">Demo • SMS / Voice (mock)</p>
+        </div>
+        <div class="card" style="grid-column: span 5; min-width:280px;">
+          <h3>Subscribe</h3>
+          <label>Phone Number</label>
+          <input id="phone" placeholder="+91 98765 43210" style="width:100%;margin:8px 0 12px;padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--fg);"/>
+          <label>Language</label>
+          <select id="lang" style="width:100%;margin:8px 0 12px;padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--fg);">
+            <option value="english">English</option>
+            <option value="hindi">हिंदी (Hindi)</option>
+            <option value="telugu">తెలుగు (Telugu)</option>
+            <option value="tamil">தமிழ் (Tamil)</option>
+          </select>
+          <button class="btn" style="width:100%;justify-content:center;background:var(--primary);color:hsl(220 25% 8%);" onclick="subscribe()">Subscribe to Alerts</button>
+          <p id="subMsg" style="color:var(--muted);margin-top:10px"></p>
+        </div>
+        <div class="card" style="grid-column: span 7; min-width:280px;">
+          <h3>Recent Alerts</h3>
+          <ul id="alertsList" style="list-style:none;padding:0;margin:0;display:grid;gap:10px;"></ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const sections = ['home','flood','landslide','live','alerts'];
+    function showSection(id){
+      sections.forEach(s=>{
+        document.getElementById(s).classList.toggle('hide', s!==id);
+        document.getElementById('link-'+s)?.classList.toggle('active', s===id);
+      });
+    }
+
+    // Initialize Leaflet maps when their section first shows
+    let floodMap, landslideMap, liveFlood, liveLandslide;
+
+    const floodZones = [
+      { name: 'Kerala Coast', pos:[8.5241,76.9366], risk:'HIGH', color:'#ef4444', radius:50000 },
+      { name: 'Mumbai Region', pos:[19.0760,72.8777], risk:'MODERATE', color:'#f59e0b', radius:40000 },
+      { name: 'Assam Valley', pos:[26.2006,92.9376], risk:'HIGH', color:'#ef4444', radius:45000 },
+      { name: 'Gujarat Plains', pos:[22.2587,71.1924], risk:'LOW', color:'#22c55e', radius:30000 },
+    ];
+
+    const deformationZones = [
+      { name: 'Western Ghats', pos:[15.3173,75.7139], info:'12mm', risk:'HIGH', color:'#ef4444', radius:40000 },
+      { name: 'Himalayan Region', pos:[30.0668,79.0193], info:'7mm', risk:'MODERATE', color:'#f59e0b', radius:50000 },
+      { name: 'Northeast Hills', pos:[25.5788,91.8933], info:'15mm', risk:'HIGH', color:'#ef4444', radius:35000 },
+      { name: 'Central Highlands', pos:[23.4732,77.9479], info:'3mm', risk:'LOW', color:'#22c55e', radius:30000 },
+    ];
+
+    function initFlood(target){
+      const map = L.map(target, { center:[20.5937,78.9629], zoom:5 });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'&copy; OpenStreetMap' }).addTo(map);
+      floodZones.forEach(z=>{
+        const c=L.circle(z.pos,{ radius:z.radius, color:z.color, fillColor:z.color, fillOpacity:.3, weight:2 }).addTo(map);
+        c.bindPopup(`<b>${z.name}</b><br/>Risk: <b>${z.risk}</b>`);
+      });
+      return map;
+    }
+
+    function initLandslide(target){
+      const map = L.map(target, { center:[23.5937,78.9629], zoom:5 });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'&copy; OpenStreetMap' }).addTo(map);
+      deformationZones.forEach(z=>{
+        const c=L.circle(z.pos,{ radius:z.radius, color:z.color, fillColor:z.color, fillOpacity:.3, weight:2 }).addTo(map);
+        c.bindPopup(`<b>${z.name}</b><br/>Deformation: <b>${z.info}</b><br/>Risk: <b>${z.risk}</b>`);
+      });
+      return map;
+    }
+
+    // Observe section visibility to init maps once
+    const observers = {};
+    function ensureMapInit(sectionId, elId, initFn){
+      const el = document.getElementById(sectionId);
+      observers[sectionId] = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{
+          if(e.isIntersecting){
+            const target = document.getElementById(elId);
+            if(initFn === initFlood && !window._floodInit){ floodMap = initFlood(target); window._floodInit = true; }
+            if(initFn === initLandslide && !window._landslideInit){ landslideMap = initLandslide(target); window._landslideInit = true; }
+            observers[sectionId].disconnect();
+          }
+        })
+      },{ threshold:.1 });
+      observers[sectionId].observe(el);
+    }
+
+    ensureMapInit('flood','floodMap', initFlood);
+    ensureMapInit('landslide','landslideMap', initLandslide);
+    // Live maps both
+    (function(){
+      const el = document.getElementById('live');
+      const obs = new IntersectionObserver((entries)=>{
+        if(entries.some(e=>e.isIntersecting)){
+          if(!window._liveInit){
+            liveFlood = initFlood('liveFlood');
+            liveLandslide = initLandslide('liveLandslide');
+            window._liveInit = true;
+          }
+          obs.disconnect();
+        }
+      },{ threshold:.1 });
+      obs.observe(el);
+    })();
+
+    // Alerts demo
+    const recentAlerts = [
+      { type:'Flood', sev:'HIGH', loc:'Kerala Coast', time:'2h', msg:'High flood risk detected. Evacuation recommended.' },
+      { type:'Landslide', sev:'HIGH', loc:'Western Ghats', time:'5h', msg:'Ground deformation detected. Alert issued.' },
+      { type:'Flood', sev:'MODERATE', loc:'Mumbai Region', time:'1d', msg:'Moderate flood risk. Monitor closely.' },
+    ];
+    const list = document.getElementById('alertsList');
+    recentAlerts.forEach(a=>{
+      const li = document.createElement('li');
+      li.className='card';
+      li.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <span style="font-weight:700">${a.loc}</span>
+        <span style="font-size:12px;color:var(--muted)">${a.time}</span>
+      </div>
+      <div style="margin-top:6px;color:var(--muted);font-size:14px">${a.type} • ${a.sev}</div>
+      <div style="margin-top:4px;">${a.msg}</div>`;
+      list.appendChild(li);
+    });
+function subscribe(){
+  const phone = document.getElementById('phone').value.trim();
+  const lang  = document.getElementById('lang').value;
+  const p = document.getElementById('subMsg');
+  if(!phone){ 
+    p.textContent='Please enter a phone number.'; 
+    return; 
+  }
+  p.textContent = `Subscribed! You will receive ${lang} alerts at ${phone}.`;
+}
+window.subscribe = subscribe;
+
+  </script>
+</body>
+</html>
